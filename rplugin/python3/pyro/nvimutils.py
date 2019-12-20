@@ -58,12 +58,13 @@ def search_pattern(vim, buf, pattern):
     return idxs, lines
 
 
-def highlight_line(vim, namespace, line_num, hl_group="PMenu"):
+def highlight_line(vim, buf, namespace, line_num, hl_group="PMenu"):
     """ highlight line
     Args: 
         vim (obj): nvim socket handler
+        buf (obj): buffer
         namespace (str): Namespace to which this highlight belongs
-        line_num (int): line_num
+        line_num (int): line_num, 0 indexed
         hl_group (str): Highlight group, see :highlight for groups
     Returns: 
         hl_hdl (obj): Handler for this line
@@ -73,7 +74,7 @@ def highlight_line(vim, namespace, line_num, hl_group="PMenu"):
     """
     """ Creates or gets existing namespace """
     nid = vim.request("nvim_create_namespace", namespace)
-    return vim.request("nvim_buf_add_highlight", 0, nid, "PMenu",
+    return vim.request("nvim_buf_add_highlight", buf, nid, hl_group,
                        line_num, 0, -1)
 
 
@@ -100,7 +101,7 @@ def add_lines(vim, buf, start, end, lines):
     """ 
     for l in lines:
         """ Nvim lines are 0 indexed """
-        vim.request("nvim_buf_set_lines", buf, start-1, end, 0, [l])
+        vim.request("nvim_buf_set_lines", buf, start, end, 0, [l])
 
 
 def create_buf(vim, scratch=0):

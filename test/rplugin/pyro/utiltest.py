@@ -35,11 +35,11 @@ class SimpleTests(unittest.TestCase):
 
     def search_highlight_pattern(self):
         self.search_pattern()
-        hdl = nvimutils.highlight_line(self.p.vim, "test", 3)
+        hdl = nvimutils.highlight_line(self.p.vim, self.p.cur_buf, "test", 3)
 
     def clear_highlight_pattern(self):
         self.search_pattern()
-        hdl = nvimutils.clear_highlight(self.p.vim, "test")
+        hdl = nvimutils.clear_highlight(self.p.vim, self.p.cur_buf, "test")
 
     def add_lines(self):
         self.append_few_lines(self.p.cur_buf)

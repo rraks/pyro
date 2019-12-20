@@ -8,10 +8,15 @@ from pynvim import attach
 from pyro import nvimutils
 from pyro import nvimui
 import threading 
+from datetime import datetime
+import subprocess
+import json
 
-"""
-autocmd BufWritePost <buffer=<bufid> :call rpcnotify(<channel>, <eventname>)>
-"""
+
+macro_template = ['""" code_template.py', 'Boiler plate template for a python macro',
+                  '"""', '', '""" Do not edit """', 'import sys', 'import json', '',
+                  '""" This is the input list[list[line]] to the macro """', 'lst = json.loads(sys.argv[1])',
+                  '', '""" Insert Macro here """', '','', '""" End Macro """']
 
 class Pyro():
     def __init__(self):
@@ -19,8 +24,6 @@ class Pyro():
         self.cur_buf = self.vim.current.buffer
         self.macro_dir = self.vim.vars["pyro_macro_path"]
         self.vim.chdir(self.macro_dir)
-        # self.vim.command("autocmd BufWritePost <buffer=%d> call rpcnotify(%d, 'saved')"\
-        #                  % (self.cur_buf.number, self.vim.channel_id))
 
     def get_lines(self, pattern):
         format_spacers = 3
@@ -31,7 +34,7 @@ class Pyro():
             formatted_lines.append(l)
             for spc in range(format_spacers):
                 formatted_lines.append([""])
-        return lines, formatted_lines
+        return idxs, lines, formatted_lines
 
 
     def save_macro(self):
@@ -45,25 +48,49 @@ class Pyro():
             f.write(lines)
 
     def start(self, pattern):
-        """ Flow
-            - [x] Create tmp buffer
-            - [ ] Save with some name in pyro_macro_dir
-            - [ ] Make a tabview from the buffer
-            - [ ] Split tab window into scratch for RO output and WR input (code)
-            - [ ] Command to execute code
-            - [ ] Set filetype to python
-        """
-        self.lines, fmtd_lines = self.get_lines(pattern)
+        """ TODO: Change filetype """
+        idxs, lines, fmtd_lines = self.get_lines(pattern)
+        codeflname = "tmp_" + datetime.now().strftime("%H_%M_%S") + ".py"
         self.codehdl = nvimutils.create_buf(self.vim, 0)
+        self.put_code(macro_template)
+        self.vim.request("nvim_buf_set_name", self.codehdl.number, codeflname)
         self.scratchhdl = nvimutils.create_buf(self.vim, 1)
         self.put_scratch(fmtd_lines)
         nvimui.new_tab_buffer(self.vim, self.codehdl)
+        self.vim.command("autocmd BufWritePost <buffer=%d> call rpcnotify(%d, 'saved')"\
+                         % (self.codehdl.number, self.vim.channel_id))
+        self.vim.command("%dbufdo set filetype=python" % self.codehdl.number)
         nvimui.vsplit_win(self.vim, self.scratchhdl)
-        self.vim.command("autocmd BufWritePost <buffer=%d> :echo 'It worked'" % (self.codehdl.number))
+
         while(True):
             event = self.vim.next_message()
-            print("Block released")
-            self.vim.command("echo 'Triggered'")
+            if event[1] == "saved":
+                try:
+                    output = subprocess.check_output(["python3",
+                                                self.codehdl.name,
+                                                json.dumps(lines)],
+                                                encoding="utf-8")
+                    output = json.loads(output)
+
+                    lnum = 0
+                    self.scratchhdl[:] = []
+                    for (inp, outp) in zip(lines, output):
+                        print(inp, lnum)
+                        nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, inp)
+                        nvimutils.highlight_line(self.vim, self.scratchhdl,
+                                                 "inlines"+str(lnum), lnum, hl_group="PMenu")
+                        lnum += 1
+                        nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, outp)
+                        nvimutils.highlight_line(self.vim, self.scratchhdl,
+                                                 "outlines"+str(lnum), lnum, hl_group="PMenuSel")
+                        lnum += 1
+                        nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, " ")
+                        lnum += 1
+                        nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, " ")
+                        lnum += 1
+                except Exception as e:
+                    print(e)
+
 
 
     def get_code(self):
@@ -76,7 +103,6 @@ class Pyro():
         nvimutils.append_line(self.codehdl, code)
 
     def put_scratch(self, scratch):
-        print(scratch)
         nvimutils.append_line(self.scratchhdl, scratch)
 
     def execute_macro(self):
