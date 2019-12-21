@@ -1,6 +1,9 @@
 """pyrotest.py
 Pyro function tests
 This file must be executed from the root of the project
+Note: Run tmp session ./tmp_session.sh and then run these
+
+
 """
 import sys
 import unittest
@@ -11,6 +14,7 @@ from pyro import pyro
 from pyro import nvimutils
 from pyro import nvimui
 from pynvim import attach
+import time
 
 class SimpleTests(unittest.TestCase):
     @classmethod
@@ -23,29 +27,14 @@ class SimpleTests(unittest.TestCase):
         vim = attach('socket', path='/tmp/nvim')
         self.p = pyro.Pyro(vim)
 
-    def importTest(self):
-        pass
-
-
-    def append_few_lines(self, bufhdl):
-        nvimutils.append_line(bufhdl, self.ex_text_buf)
-
-    def read_buf_hdl(self):
-        self.p.start()
-        nvimutils.append_line(self.p.bufhdl, ["Testin hell"])
-        code = self.p.get_code()
-        # nvimui.open_win(self.p.vim, self.p.bufhdl)
-        print(code)
-        print(self.p.bufhdl.name)
-        print(self.p.bufhdl.number)
-
-
-    def pyro_start(self):
-        self.p.start("random")
-        input()
-        code = self.p.get_code()
-        self.p.execute_macro()
-        # self.p.save_macro(code)
+    def pyro_simple(self):
+        self.p.vim.command("Pyro/random")
+        time.sleep(0.1)
+        self.p.vim.command('call feedkeys("\<c-w>w", "n")')
+        time.sleep(0.1)
+        self.p.vim.command("w")
+        time.sleep(0.1)
+        self.p.vim.command("wa")
 
 
 if __name__ == '__main__':

@@ -35,6 +35,12 @@ class SimpleTests(unittest.TestCase):
         print(idxs)
         print(lines)
 
+    def all_lines(self):
+        self.append_few_lines(self.p.cur_buf)
+        idxs, lines = nvimutils.all_lines(self.p.vim, self.p.cur_buf)
+        print(idxs)
+        print(lines)
+
     def search_highlight_pattern(self):
         self.search_pattern()
         hdl = nvimutils.highlight_line(self.p.vim, self.p.cur_buf, "test", 3)
@@ -45,7 +51,7 @@ class SimpleTests(unittest.TestCase):
 
     def add_lines(self):
         self.append_few_lines(self.p.cur_buf)
-        nvimutils.add_lines(self.p.vim, 1, 1, ["some exaple text is now replaced"])
+        nvimutils.add_lines(self.p.vim, self.p.cur_buf, 0, 1, ["another comma", "some exaple text is now replaced"])
 
     def create_new_buf(self):
         self.append_few_lines(self.p.cur_buf)
@@ -59,6 +65,13 @@ class SimpleTests(unittest.TestCase):
         pattern = "random"
         lines = self.p.get_lines(pattern)
         print(lines)
+
+    def get_winnr(self):
+        print(self.p.vim.current.window.number)
+
+    def get_tabs(self):
+        print(nvimutils.get_tabnum(self.p.vim))
+
 
 if __name__ == '__main__':
     unittest.main()
