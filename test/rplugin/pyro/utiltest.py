@@ -9,6 +9,7 @@ sys.path.insert(1, 'rplugin/python3')
 # from pynvim import nvimutils
 from pyro import pyro
 from pyro import nvimutils
+from pynvim import attach
 
 class SimpleTests(unittest.TestCase):
     @classmethod
@@ -18,7 +19,8 @@ class SimpleTests(unittest.TestCase):
         with open(ex_text_fl, 'r') as f:
             self.ex_text_buf = f.read().splitlines()
 
-        self.p = pyro.Pyro()
+        vim = attach('socket', path='/tmp/nvim')
+        self.p = pyro.Pyro(vim)
 
         """ Clear buffer """
         nvimutils.clear_buf(self.p.cur_buf)

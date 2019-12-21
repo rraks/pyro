@@ -10,6 +10,7 @@ sys.path.insert(1, 'rplugin/python3')
 from pyro import pyro
 from pyro import nvimutils
 from pyro import nvimui
+from pynvim import attach
 
 class SimpleTests(unittest.TestCase):
     @classmethod
@@ -19,7 +20,8 @@ class SimpleTests(unittest.TestCase):
         with open(ex_text_fl, 'r') as f:
             self.ex_text_buf = f.read().splitlines()
 
-        self.p = pyro.Pyro()
+        vim = attach('socket', path='/tmp/nvim')
+        self.p = pyro.Pyro(vim)
 
     def importTest(self):
         pass

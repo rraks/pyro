@@ -3,8 +3,8 @@
 Main class
 
 """
+import pynvim
 from pyro import logger
-from pynvim import attach
 from pyro import nvimutils
 from pyro import nvimui
 import threading 
@@ -16,11 +16,12 @@ import json
 macro_template = ['""" code_template.py', 'Boiler plate template for a python macro',
                   '"""', '', '""" Do not edit """', 'import sys', 'import json', '',
                   '""" This is the input list[list[line]] to the macro """', 'lst = json.loads(sys.argv[1])',
-                  '', '""" Insert Macro here """', '','', '""" End Macro """']
+                  '', '""" Insert Macro here, output should be an stdout of list of list """', '','', '""" End Macro """']
 
-class Pyro():
-    def __init__(self):
-        self.vim = attach('socket', path='/tmp/nvim')
+class Pyro(object):
+    def __init__(self, vim):
+        # self.vim = attach('socket', path='/tmp/nvim')
+        self.vim = vim
         self.cur_buf = self.vim.current.buffer
         self.macro_dir = self.vim.vars["pyro_macro_path"]
         self.vim.chdir(self.macro_dir)
@@ -47,9 +48,38 @@ class Pyro():
         with open("/tmp/lines.txt", "w") as f:
             f.write(lines)
 
-    def start(self, pattern):
+    def pyro_start(self, args, range):
+        self.vim.command("echo hha")
+        pass
+
+
+    def on_save(self):
+        output = subprocess.check_output(["python3",
+                                    self.codehdl.name,
+                                    json.dumps(self.lines)],
+                                    encoding="utf-8")
+        output = json.loads(output)
+
+        lnum = 0
+        self.scratchhdl[:] = []
+        for (inp, outp) in zip(self.lines, output):
+            print(inp, lnum)
+            nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, inp)
+            nvimutils.highlight_line(self.vim, self.scratchhdl,
+                                     "inlines"+str(lnum), lnum, hl_group="PMenu")
+            lnum += 1
+            nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, outp)
+            nvimutils.highlight_line(self.vim, self.scratchhdl,
+                                     "outlines"+str(lnum), lnum, hl_group="PMenuSel")
+            lnum += 1
+            nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, " ")
+            lnum += 1
+            nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, " ")
+            lnum += 1
+
+    def start_pyro(self, pattern):
         """ TODO: Change filetype """
-        idxs, lines, fmtd_lines = self.get_lines(pattern)
+        idxs, self.lines, fmtd_lines = self.get_lines(pattern)
         codeflname = "tmp_" + datetime.now().strftime("%H_%M_%S") + ".py"
         self.codehdl = nvimutils.create_buf(self.vim, 0)
         self.put_code(macro_template)
@@ -57,39 +87,12 @@ class Pyro():
         self.scratchhdl = nvimutils.create_buf(self.vim, 1)
         self.put_scratch(fmtd_lines)
         nvimui.new_tab_buffer(self.vim, self.codehdl)
-        self.vim.command("autocmd BufWritePost <buffer=%d> call rpcnotify(%d, 'saved')"\
+        self.vim.command("autocmd BufWritePost <buffer=%d> call rpcnotify(%d, 'pyro_save_trigger')"\
                          % (self.codehdl.number, self.vim.channel_id))
-        self.vim.command("%dbufdo set filetype=python" % self.codehdl.number)
+        self.vim.command("%dbufdo! set filetype=python" % self.codehdl.number)
         nvimui.vsplit_win(self.vim, self.scratchhdl)
+        #self.vim.run_loop(self.event_cb, None, None)
 
-        while(True):
-            event = self.vim.next_message()
-            if event[1] == "saved":
-                try:
-                    output = subprocess.check_output(["python3",
-                                                self.codehdl.name,
-                                                json.dumps(lines)],
-                                                encoding="utf-8")
-                    output = json.loads(output)
-
-                    lnum = 0
-                    self.scratchhdl[:] = []
-                    for (inp, outp) in zip(lines, output):
-                        print(inp, lnum)
-                        nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, inp)
-                        nvimutils.highlight_line(self.vim, self.scratchhdl,
-                                                 "inlines"+str(lnum), lnum, hl_group="PMenu")
-                        lnum += 1
-                        nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, outp)
-                        nvimutils.highlight_line(self.vim, self.scratchhdl,
-                                                 "outlines"+str(lnum), lnum, hl_group="PMenuSel")
-                        lnum += 1
-                        nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, " ")
-                        lnum += 1
-                        nvimutils.add_lines(self.vim, self.scratchhdl, lnum, lnum+1, " ")
-                        lnum += 1
-                except Exception as e:
-                    print(e)
 
 
 

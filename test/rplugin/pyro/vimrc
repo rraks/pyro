@@ -1,0 +1,4 @@
+let &runtimepath.=',/home/thepro/Work/gitrepos/pyro/'
+let g:python3_host_prog = '/home/thepro/anaconda3/bin/python'
+let g:pyro_macro_path='/tmp'
+
