@@ -1,7 +1,6 @@
-
-We are going to write a few sample lines here.
-A few lines to match some random text.
-Another random line to match text.
-A line to not match any text.
-SingleWordLine1
-SingleWordLine2
+GET, http://google.com
+<Response [200]>
+GET, http://www.mocky.io/v2/5e022d962f00007696dcd5b9
+<Response [200]>
+GET, http://github.com
+<Response [200]>

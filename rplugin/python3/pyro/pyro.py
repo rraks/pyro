@@ -49,7 +49,7 @@ class Pyro(object):
         format_spacers = 3
         if mode == "r" or mode == "a":
             idxs, lines = nvimutils.search_pattern(self.vim, self.cur_buf, pattern)
-        if mode == "g":
+        if mode == "ga":
             idxs, lines = nvimutils.all_lines(self.vim, self.cur_buf)
         formatted_lines = []
         for l in lines:
@@ -75,11 +75,17 @@ class Pyro(object):
         """ Macro code execution callback
         """
         """ Output is only set on saving the code buffer """
-        self.output = subprocess.check_output(["python3",
-                                    self.code_fl_name,
-                                    json.dumps(self.lines)],
-                                    encoding="utf-8")
-        self.output = json.loads(self.output)
+        try:
+            self.output = subprocess.check_output(["python3", 
+                                        self.code_fl_name,
+                                        json.dumps(self.lines)],
+                                        stderr=subprocess.STDOUT,
+                                        encoding="utf-8")
+            self.output = json.loads(self.output)
+        except subprocess.CalledProcessError as e:
+            self.vim.command("echo '%s'" % e.output)
+            return
+
         lnum = 0
         self.scratchhdl[:] = []
         for (inp, outp) in zip(self.lines, self.output):
@@ -110,7 +116,7 @@ class Pyro(object):
             offset = 0
             for idx, l in enumerate(self.output):
                 nvimutils.add_lines(self.vim, self.cur_buf,
-                                    self.idxs[idx][0]-1+offset, self.idxs[idx][0]-1+offset, l)
+                                    self.idxs[idx][0]+offset, self.idxs[idx][0]+offset, l)
                 offset += len(l)
 
     def on_buffer_change(self):

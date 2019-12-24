@@ -27,10 +27,10 @@ class PyroHandlers(object):
                 modestr = "r"
             if ln == 1:
                 pattern = ""
-                modestr = "gr"
+                modestr = "ga"
         else:
             pattern = ""
-            modestr = "gr"
+            modestr = "ga"
 
         self.p.start_pyro(pattern=pattern, mode=modestr)
 
