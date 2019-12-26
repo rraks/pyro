@@ -49,7 +49,7 @@ class Pyro(object):
         format_spacers = 3
         if mode == "r" or mode == "a":
             idxs, lines = nvimutils.search_pattern(self.vim, self.cur_buf, pattern)
-        if mode == "ga":
+        if mode == "ga" or mode == "gr":
             idxs, lines = nvimutils.all_lines(self.vim, self.cur_buf)
         formatted_lines = []
         for l in lines:

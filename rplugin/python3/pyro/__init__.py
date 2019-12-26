@@ -22,13 +22,15 @@ class PyroHandlers(object):
                 pattern = args[1]
                 modestr = args[2]
             if ln == 2:
-                """ mode forced to replace """
-                pattern = args[1]
-                modestr = "r"
+                """ mode forced to global replace """
+                pattern = ""
+                modestr = args[1]
             if ln == 1:
+                """ mode forced to global append """
                 pattern = ""
                 modestr = "ga"
         else:
+            """ mode forced to global append """
             pattern = ""
             modestr = "ga"
 
